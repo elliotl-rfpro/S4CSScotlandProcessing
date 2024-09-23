@@ -1,4 +1,4 @@
-from utils.dir_tools import copy_txts
+from improc.utils.dir_tools import copy_txts, raw2exr, remove_exrs, copy_exrs, exr2png
 
 # Claytex camera
 sources = [
@@ -34,6 +34,28 @@ destinations = [
 
 if __name__ == '__main__':
     # Move images
-    for source, destination in zip(sources, destinations):
-        # copy_bmps(source, destination)
-        copy_txts(source, destination)
+    # for source, destination in zip(sources, destinations):
+    #     # copy_bmps(source, destination)
+    #     copy_txts(source, destination)
+
+    # Clean folder of .exrs
+    sources = [
+        'D:/WMG_LucidCamera/2024-02-11',
+        'D:/WMG_LucidCamera/2024-02-21',
+        'D:/WMG_LucidCamera/2024-02-29',
+        'D:/WMG_LucidCamera/2024-03-01',
+        'D:/WMG_LucidCamera/2024-03-04'
+    ]
+    for folder in sources:
+        # Convert .raw to .exr
+        raw2exr(folder, "C:/Users/ElliotLondon/Documents/PythonLocal/S4CSCardington/data/RawToExr.LUCIDTRITON.exe")
+
+        local_fname = folder.replace('-', '_')
+
+        # Copy .exrs to required folder
+        copy_exrs(folder, f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/Measured/RAW Camera/{local_fname[-10:]}')
+
+        # Turn .exrs into .png files
+        exr2png(f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/Measured/RAW Camera/{local_fname[-10:]}')
+
+    # remove_exrs('D:/WMG_LucidCamera/2024-03-01')
