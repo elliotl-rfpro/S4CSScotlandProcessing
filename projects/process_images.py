@@ -6,13 +6,15 @@ import numpy as np
 from skimage.metrics import structural_similarity as ssim
 import seaborn as sns
 import tkinter as tk
+from PIL import Image
 
-os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '1' # Use when working exclusively with .exr files
+# os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '1' # Use when working exclusively with .exr files
 import cv2
 
 from improc.improc import (read_exr, read_images, simulate_mosaicing_rggb, get_colour_histograms,
-                           white_balance_adjust, auto_colour_adjust, process_images, reshape_img)
+                           white_balance_adjust, auto_colour_adjust, process_images, reshape_img, exr_to_png)
 from improc.ssim_cropper import ImageCropper, all_rects
+from camera.camera import gamma_correction, auto_white_balance
 from core.object_locations import *
 
 sns.set(palette="dark", font_scale=1.1, color_codes=True)
@@ -28,6 +30,10 @@ def visualise_ssim_regions(img1, img2, view=None, area=None):
     elif area == 'full':
         area = [[0, 0, img1.shape[0], img1.shape[1]], [0, 0, img2.shape[0], img2.shape[1]]]
 
+    # First BGR to RGB
+    img1 = cv2.cvtColor(img1, cv2.COLOR_BGR2RGB)
+    img2 = cv2.cvtColor(img2, cv2.COLOR_BGR2RGB)
+
     # Firstly reshape images
     img2 = reshape_img(img1, img2)
 
@@ -37,21 +43,29 @@ def visualise_ssim_regions(img1, img2, view=None, area=None):
     # Greyscale
     img1_g = cv2.cvtColor(img1, cv2.COLOR_RGB2GRAY)
     img2_g = cv2.cvtColor(img2, cv2.COLOR_RGB2GRAY)
-
-    # Colour correction
     img1_arr = np.array(img1)
     img2_arr = np.array(img2)
+
+    # Auto white balance
     img1_arr = white_balance_adjust(img1_arr, img2)
-    img1_arr = auto_colour_adjust(img1_arr, img2_arr, blend=0.5)
+    img = Image.fromarray(cv2.normalize(img1_arr, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8))
+    img.save(f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/{fname_sim}_awb.png')
+
+    # Colour correction
+    img1_arr = auto_colour_adjust(img1_arr, img2_arr, blend=0.1)
+    img = Image.fromarray(cv2.normalize(img1_arr, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8))
+    img.save(f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/{fname_sim}_awb-acb.png')
 
     # Perform simulated mosaicing
-    img1_arr = simulate_mosaicing_rggb(img1_arr, blend=0.0)
+    img1_arr = simulate_mosaicing_rggb(img1_arr)
+    img = Image.fromarray(cv2.normalize(img1_arr, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8))
+    img.save(f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/{fname_sim}_awb-acb-dmos.png')
 
-    # plt.figure(figsize=(10, 6))
-    # plt.title('Simulated image with colour correction')
-    # plt.grid(False)
-    # plt.imshow(img1_arr)
-    # plt.show()
+    plt.figure(figsize=(10, 6))
+    plt.title('Simulated image with colour correction')
+    plt.grid(False)
+    plt.imshow(img1_arr)
+    plt.show()
 
     # Convert back to greyscale for comparison
     img1_g_2 = cv2.cvtColor(img1_arr, cv2.COLOR_RGB2GRAY)
@@ -176,17 +190,22 @@ def visualise_ssim_regions(img1, img2, view=None, area=None):
 
 if __name__ == '__main__':
     # Load images
-    camera = 'Simulated/Camera 1'
-    meas_path = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/2024-03-01-07-50-00.png'
-    sim_path = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/sim_2024-03-01-07-50-00_f_25_sh05.png'
+    camera = 'Simulated/Camera RAW'
+    fname_meas = '20240301_1030_image1'
+    fname_sim = 'sim_20240301_1030_image1_f25_sh05'
 
-    # camera = 'Simulated/Camera 2'
-    # meas_path = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/20240301_1355_IMX728_RCCB_1.bmp'
-    # sim_path = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/20240301_1355_IMX728_RCCB_1_f_25_sh1.png'
+    if 'Camera 1' in camera:
+        meas_path = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/{fname_meas}.png'
+        sim_path = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/{fname_sim}.png'
+    elif 'Camera 2' in camera:
+        meas_path = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/{fname_meas}.bmp'
+        sim_path = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/{fname_sim}.png'
+    elif 'RAW' in camera:
+        meas_path = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/{fname_meas}.png'
+        sim_path = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/{fname_sim}.png'
 
-    # camera = 'Simulated/RAW Camera'
-    # meas_path = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/20240301_1400_image1.exr'
-    # sim_path = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/{camera}/sim_20240301_1400_image1_f_25_sh05.exr'
+    # exr_to_png(sim_path,
+    # f'/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/Simulated/Camera 1/sim_2024-02-29-11-00-00_Camera14_#0907_f25_sh05.png')
 
     # # Run analysis routine for the two images, selecting regions
     # for img_path in [sim_path, meas_path]:
@@ -202,7 +221,7 @@ if __name__ == '__main__':
         image_1, image_2 = read_images(sim_path, meas_path)
 
         # Switch cases for quickly viewing entire image rather than regions
-        img_area = 'na'
+        img_area = 'full'
         if img_area == 'full':
             img_area = [[0, 0, image_1.shape[1], image_1.shape[0]], [0, 0, image_2.shape[1], image_2.shape[0]]]
         else:
