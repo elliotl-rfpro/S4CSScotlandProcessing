@@ -6,7 +6,7 @@ from PIL import Image
 from improc.utils.macbeth_utils import (apply_colour_filters, plot_differences, calculate_mses, display_colours,
                                         process_macbeth_colours, eval_filters, apply_global_filter)
 from improc.improc import simulate_mosaicing_rggb
-from camera.camera import auto_white_balance, gamma_correction
+from camera.camera import auto_white_balance_ref, auto_white_balance, gamma_correction
 from matplotlib import pyplot as plt
 from scipy.optimize import minimize
 
@@ -109,19 +109,19 @@ if __name__ == '__main__':
     # Change regions so that they match the initial point of the measured macbeth chart
     for i in range(len(rw_regions)):
         rw_regions[i][0] += 1595
-        rw_regions[i][1] += 1061
+        rw_regions[i][1] += 1063
         rw_regions[i][2] += 1595
-        rw_regions[i][3] += 1061
+        rw_regions[i][3] += 1063
 
     meas_colours_raw = process_macbeth_colours(meas_image, rows=4, columns=6, regions=rw_regions, ao='yx', avg=False)
     meas_colours = process_macbeth_colours(meas_image, rows=4, columns=6, regions=rw_regions, ao='yx', avg=True)
 
-    display_colours(meas_colours_raw, title='Measured colours', orientation='portrait')
-    plt.show()
+    # display_colours(meas_colours_raw, title='Measured colours', orientation='portrait')
+    # plt.show()
 
     # --- PROCESSING --- #
-    # First handle contrast matching (global scaling)
-    filt_colours = sim_colours.copy()
+    # Calculate colours from filtered image
+    sim_colours = process_macbeth_colours(sim_image, rows=4, columns=6, regions=hdr_regions, ao='yx', avg=True)
 
     # Calculate initial MSE
     init_mse = calculate_mses(np.array(sim_colours), np.array(meas_colours))
@@ -153,7 +153,8 @@ if __name__ == '__main__':
     optimal_filters = result.x
     print("Optimal filters:", optimal_filters)
 
-    # Apply the optimal filters to image1 and show plot
+    # Apply the optimal filters
+    filt_colours = sim_colours.copy()
     filt_colours = apply_colour_filters(filt_colours, optimal_filters)
 
     # Expand arrays to make them plotable
@@ -173,10 +174,10 @@ if __name__ == '__main__':
     plt.show()
 
     # Plot difference metrics
-    diff = plot_differences(sim_colours, meas_colours, title='Difference for each colour')
+    diff = plot_differences(np.array(sim_colours), np.array(meas_colours), title='Difference for each colour')
     plt.ylim([-255, 255])
 
-    diff2 = plot_differences(filt_colours, meas_colours, title='Difference for each colour, corrected')
+    diff2 = plot_differences(np.array(filt_colours), np.array(meas_colours), title='Difference for each colour, corrected')
     plt.ylim([-255, 255])
     plt.show()
 
