@@ -30,6 +30,13 @@ c3_sky = [[], []]
 c3_hills = [[], []]
 c3_all = [c3_road_target_near, c3_road_target_far, c3_bw_target, c3_grass, c3_trees, c3_sky, c3_hills]
 
+"""Winter Test Site, 60 FOV, RAW Camera"""
+c3_fog_target_1 = [[1163, 957, 1250, 1082], [1213, 985, 1283, 1075]]
+c3_fog_target_2 = [[1286, 950, 1412, 1133], [1307, 975, 1407, 1110]]
+c3_fog_target_3 = [[1423, 927, 1456, 977], [1423, 965, 1446, 997]]
+c3_fog_target_4 = [[1463, 932, 1516, 1009], [1455, 973, 1496, 1026]]
+c3_fog_target_5 = [[1711, 905, 1892, 1187], [1578, 951, 1772, 1219]]
+
 """Macbeth chart regions"""
 wt_regions = [
     [17, 16, 29, 28], [34, 16, 46, 28], [52, 16, 64, 28], [69, 16, 81, 28],
