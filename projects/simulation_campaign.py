@@ -2,11 +2,14 @@
 Master info
 Lat/Long (2kflat/Cardiff): 51.5 N, 3.2W, Solstice zenith: 2008-07-21::14:14, Peak solar luminance: 1.6e9 - 1.9e9
 """
+import os.path
 import re
 import clr
 import time
 from typing import List
 from matplotlib import pyplot as plt
+
+from data.sim_data import fog_levels, times
 
 # Load the rFpro.Controller DLL/Assembly
 clr.AddReference("C:/rFpro/2023b/API/rFproControllerExamples/Controller/rFpro.Controller")
@@ -33,47 +36,6 @@ def find_and_replace(data: List[str], values: dict) -> None:
 # Load in the DATA_PATH
 DATA_PATH = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data'
 CONFIGS_PATH = f'C:/Users/ElliotLondon/Documents/PythonLocal/S4CWinterTesting/data/Fog_Comparison/configs'
-
-# Set up simulation settings variables
-comments = ''
-times = []
-num_times = 19
-for i in range(num_times):
-    if i <= 11:
-        sim_time = f"2024-03-01T08:{5 * i:02d}:00"
-    elif 11 <= i <= 23:
-        sim_time = f"2024-03-01T09:{5 * (i - 12):02d}:00"
-    times.append(sim_time)
-
-# times = [
-#     f"2024-03-01T08:25:00"
-# ]
-
-fog_levels = [
-    0.02000,
-    0.02000,
-    0.01000,
-    0.01500,
-    0.02000,
-    0.01000,
-    0.00750,
-    0.00500,
-    0.00750,
-    0.01000,
-    0.01500,
-    0.02000,
-    0.00500,
-    0.00250,
-    0.00250,
-    0.00250,
-    0.00250,
-    0.00175,
-    0.00175
-]
-
-# fog_levels = [
-#     0.00500
-# ]
 
 # Check fog graph looks OK
 plt.plot(fog_levels)
@@ -135,10 +97,20 @@ for fog_level, t in zip(fog_levels, times):
     rFpro.StartSession()
     time.sleep(10)
     t1 = time.time()
+    fname = f'{save_loc}/{adj_sim}dn000000.exr'
     while True:
+        # Check if file has been created and break
+        if os.path.exists(fname):
+            print(f'File: {adj_sim} created. Continuing...')
+            rFpro.StopSession()
+            time.sleep(2)
+            break
+
+        # Else, have a default timeout
         t2 = time.time()
         if (t2 - t1) >= 400.0:
             rFpro.StopSession()
+            time.sleep(2)
             break
 
 print("Simulation campaign complete!\n")
